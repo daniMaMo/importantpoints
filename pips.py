@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import pandas as pd
 
 def EDist(ys, xs, Adjx, Adjy):
     return (
@@ -27,7 +29,7 @@ def PIPs(ys, n_PIPs, type_of_dist=1, pflag=0):
         ys : array-like
             Price series (1D array).
         n_PIPs : int
-            Number of requested PIPs.
+            Number of requested PIPs minus 1.
         type_of_dist : int
             1 = Euclidean Distance (ED)
             2 = Perpendicular Distance (PD)
@@ -37,13 +39,13 @@ def PIPs(ys, n_PIPs, type_of_dist=1, pflag=0):
 
         Returns
         -------
-        PIPxy : ndarray (n_PIPs, 2)
+        PIPxy : ndarray (n_PIPs + 1, 2)
             Columns: [x-coordinate, y-coordinate]
         """
 
     ys = np.asarray(ys).flatten()
     l = len(ys)
-    xs = np.arange(1, l + 1)  # MATLAB: xs = (1:l)'
+    xs = np.arange(1, l + 1)
 
     # Binary indexation of PIPs
     PIP_points = np.zeros(l)
@@ -55,7 +57,7 @@ def PIPs(ys, n_PIPs, type_of_dist=1, pflag=0):
     while currentstate <= n_PIPs:
 
         Existed_Pips = np.where(PIP_points == 1)[0]
-        Existed_Pips = Existed_Pips + 1  # MATLAB-style indices (1-based)
+        Existed_Pips = Existed_Pips + 1
         currentstate = len(Existed_Pips)
 
         locator = np.zeros((l, currentstate))
@@ -115,18 +117,43 @@ def PIPs(ys, n_PIPs, type_of_dist=1, pflag=0):
 
     return PIPxy
 
-# ---------- Serie de precios de ejemplo ----------
-np.random.seed(42)
-ys = np.cumsum(np.random.randn(150))  # caminata aleatoria (random walk)
+#------------Examples----------------------------
+DATA_FOLDER = "data_arrays"
 
-# ---------- Parámetros ----------
-n_PIPs = 10        # número de PIPs
-type_of_dist = 2   # 1 = ED, 2 = PD, 3 = VD
-pflag = 1          # activar gráfica
+n_PIPs = 9          # Control parameter: the algorithm returns n_PIPs + 1 points
+type_of_dist = 2    # 1=ED, 2=PD, 3=VD
+pflag = 1           # If 1, plot the PIPs
 
-# ---------- Ejecutar algoritmo ----------
-PIPxy = PIPs(ys, n_PIPs, type_of_dist, pflag)
+for file_name in os.listdir(DATA_FOLDER):
 
-# ---------- Mostrar resultados ----------
-print("PIPs encontrados (x, y):")
-print(PIPxy)
+    # Build full path to the CSV file
+    file_path = os.path.join(DATA_FOLDER, file_name)
+
+    # --- Read CSV file
+    df = pd.read_csv(file_path)
+
+    # --- Convert 'Date' column to datetime
+    df["Date"] = pd.to_datetime(df["Date"])
+
+    # --- Filter data for year 2021
+    df_2021 = df[df["Date"].dt.year == 2021]
+
+    # Skip assets without data for the selected year
+    if df_2021.empty:
+        print(f"{file_name}: no data for 2021")
+        continue
+
+    # --- Extract Adjusted Close prices
+    ys = df_2021["Adj Close"].values
+
+    # --- Run PIPs algorithm
+    print(f"\nActivo: {file_name}")
+    PIPxy = PIPs(
+        ys=ys,
+        n_PIPs=n_PIPs,
+        type_of_dist=type_of_dist,
+        pflag=pflag
+    )
+
+    print("PIPs (x, y):")
+    print(PIPxy)
