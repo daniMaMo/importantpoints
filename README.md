@@ -58,8 +58,10 @@ The Rolling Window method detects regional peaks and bottoms by comparing each p
 
 - Python ≥ 3.8  
 - NumPy  
-- Matplotlib  
+- Matplotlib
+- os
+- pandas
 
 Install dependencies using:
 ```bash
-pip install numpy matplotlib
+pip install numpy matplotlib pandas
